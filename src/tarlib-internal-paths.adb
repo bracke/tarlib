@@ -1,4 +1,6 @@
 package body Tarlib.Internal.Paths is
+   use type Tarlib.Errors.Status_Code;
+
    function Has_Dot_Dot_Component (Path : String) return Boolean is
       Start : Positive := Path'First;
    begin
@@ -74,4 +76,14 @@ package body Tarlib.Internal.Paths is
       Result.Status := (Code => Tarlib.Errors.Path_Too_Long);
       return Result;
    end Split;
+
+   function Validate_Archive_Path (Path : String) return Tarlib.Errors.Status is
+      Result : constant Path_Split := Split (Path);
+   begin
+      if Result.Status.Code = Tarlib.Errors.Path_Too_Long then
+         return Tarlib.Errors.OK;
+      else
+         return Result.Status;
+      end if;
+   end Validate_Archive_Path;
 end Tarlib.Internal.Paths;

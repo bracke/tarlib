@@ -26,4 +26,9 @@ is
    --  Validate Path and choose a deterministic USTAR split.
    --  @param Path Archive path using / separators and no native normalization.
    --  @return Success with byte ranges or a path status.
+
+   function Validate_Archive_Path (Path : String) return Tarlib.Errors.Status;
+   --  Validate archive-relative path syntax without requiring USTAR fit.
+   --  @param Path Archive path using / separators and no native normalization.
+   --  @return Success, Invalid_Path, or Path_Too_Long.
 end Tarlib.Internal.Paths;

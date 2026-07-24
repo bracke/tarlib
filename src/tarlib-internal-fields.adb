@@ -1,13 +1,12 @@
-with Ada.Streams;
-with Interfaces;
-
 package body Tarlib.Internal.Fields is
    use type Ada.Streams.Stream_Element_Offset;
+   use type Ada.Streams.Stream_Element;
    use type Interfaces.Unsigned_64;
 
    NUL   : constant Ada.Streams.Stream_Element := 0;
    Space : constant Ada.Streams.Stream_Element := 32;
    Zero  : constant Ada.Streams.Stream_Element := 48;
+   Seven : constant Ada.Streams.Stream_Element := 55;
 
    procedure Clear (Field : out Ada.Streams.Stream_Element_Array) is
    begin
@@ -91,4 +90,92 @@ package body Tarlib.Internal.Fields is
 
       Result := Tarlib.Errors.OK;
    end Put_Octal;
+
+   function Text_Length
+     (Field : Ada.Streams.Stream_Element_Array) return Natural
+   is
+      Length : Natural := 0;
+   begin
+      for Byte of Field loop
+         exit when Byte = NUL;
+         Length := Length + 1;
+      end loop;
+
+      return Length;
+   end Text_Length;
+
+   procedure Get_Octal
+     (Field  : Ada.Streams.Stream_Element_Array;
+      Value  : out Interfaces.Unsigned_64;
+      Result : out Tarlib.Errors.Status)
+   is
+      Started : Boolean := False;
+   begin
+      Value := 0;
+
+      for Byte of Field loop
+         if Byte = NUL or else Byte = Space then
+            if Started then
+               exit;
+            end if;
+         elsif Byte in Zero .. Seven then
+            Started := True;
+            declare
+               Digit : constant Interfaces.Unsigned_64 :=
+                 Interfaces.Unsigned_64
+                   (Ada.Streams.Stream_Element'Pos (Byte)
+                    - Ada.Streams.Stream_Element'Pos (Zero));
+            begin
+               if Value > (Interfaces.Unsigned_64'Last - Digit) / 8 then
+                  Result := (Code => Tarlib.Errors.Invalid_Archive);
+                  return;
+               end if;
+               Value := Value * 8 + Digit;
+            end;
+         else
+            Result := (Code => Tarlib.Errors.Invalid_Archive);
+            return;
+         end if;
+      end loop;
+
+      Result := Tarlib.Errors.OK;
+   end Get_Octal;
+
+   procedure Get_Numeric
+     (Field  : Ada.Streams.Stream_Element_Array;
+      Value  : out Interfaces.Unsigned_64;
+      Result : out Tarlib.Errors.Status)
+   is
+      First_Value : constant Natural :=
+        Ada.Streams.Stream_Element'Pos (Field (Field'First));
+   begin
+      if First_Value < 128 then
+         Get_Octal (Field, Value, Result);
+         return;
+      end if;
+
+      if First_Value >= 192 then
+         Result := (Code => Tarlib.Errors.Invalid_Archive);
+         return;
+      end if;
+
+      Value :=
+        Interfaces.Unsigned_64 (First_Value - 128);
+      for Index in Field'First + 1 .. Field'Last loop
+         declare
+            Byte_Value : constant Interfaces.Unsigned_64 :=
+              Interfaces.Unsigned_64
+                (Ada.Streams.Stream_Element'Pos (Field (Index)));
+         begin
+            if Value > (Interfaces.Unsigned_64'Last - Byte_Value) / 256 then
+               Result := (Code => Tarlib.Errors.Invalid_Archive);
+               return;
+            end if;
+
+            Value := Value * 256 + Byte_Value;
+         end;
+      end loop;
+
+      Result := Tarlib.Errors.OK;
+   end Get_Numeric;
 end Tarlib.Internal.Fields;

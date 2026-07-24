@@ -76,6 +76,33 @@ package body Tarlib.Path_Tests is
       Assert (Too_Long.Status.Code = Tarlib.Errors.Path_Too_Long, "no split rejected");
    end Test_Invalid_Paths;
 
+   procedure Test_Archive_Path_Validation
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Long_Path : constant String := "long/" & Repeat ('x', 120);
+      Valid     : constant Tarlib.Errors.Status :=
+        Tarlib.Internal.Paths.Validate_Archive_Path (Long_Path);
+      Absolute  : constant Tarlib.Errors.Status :=
+        Tarlib.Internal.Paths.Validate_Archive_Path ("/etc/passwd");
+      Dot_Dot   : constant Tarlib.Errors.Status :=
+        Tarlib.Internal.Paths.Validate_Archive_Path ("a/../b");
+   begin
+      Assert
+        (Tarlib.Internal.Paths.Split (Long_Path).Status.Code =
+         Tarlib.Errors.Path_Too_Long,
+         "long path does not fit USTAR");
+      Assert
+        (Valid.Code = Tarlib.Errors.Success,
+         "long archive-relative path accepted");
+      Assert
+        (Absolute.Code = Tarlib.Errors.Invalid_Path,
+         "absolute path rejected");
+      Assert
+        (Dot_Dot.Code = Tarlib.Errors.Invalid_Path,
+         "parent path rejected");
+   end Test_Archive_Path_Validation;
+
    procedure Test_Directory_Trailing_Slash
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
@@ -96,6 +123,9 @@ package body Tarlib.Path_Tests is
         (T, Test_Prefix_Splits'Access, "prefix/name split paths");
       Registration.Register_Routine
         (T, Test_Invalid_Paths'Access, "invalid path rejection");
+      Registration.Register_Routine
+        (T, Test_Archive_Path_Validation'Access,
+         "archive path validation");
       Registration.Register_Routine
         (T, Test_Directory_Trailing_Slash'Access, "directory trailing slash policy");
    end Register_Tests;

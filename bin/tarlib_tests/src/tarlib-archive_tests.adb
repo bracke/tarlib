@@ -63,8 +63,8 @@ package body Tarlib.Archive_Tests is
    begin
       Check ("zero", "", 1536);
       Check ("one", "x", 2048);
-      Check ("exact", (1 .. 512 => 'x'), 2048);
-      Check ("over", (1 .. 513 => 'x'), 2560);
+      Check ("exact", [1 .. 512 => 'x'], 2048);
+      Check ("over", [1 .. 513 => 'x'], 2560);
    end Test_File_Sizes;
 
    procedure Test_Multiple_Entries

@@ -14,4 +14,10 @@ is
    --  Compute checksum while treating the checksum field as spaces.
    --  @param Header Header block to inspect.
    --  @return Standard TAR unsigned byte checksum.
+
+   function Compute_Signed
+     (Header : Tarlib.Internal.Constants.Header_Block) return Interfaces.Integer_64;
+   --  Compute historical signed-byte checksum while treating checksum as spaces.
+   --  @param Header Header block to inspect.
+   --  @return Signed-byte TAR checksum.
 end Tarlib.Internal.Checksums;

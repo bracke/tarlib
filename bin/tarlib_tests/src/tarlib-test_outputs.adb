@@ -7,6 +7,7 @@ package body Tarlib.Test_Outputs is
    begin
       Sink.Buffer := [others => 0];
       Sink.Last := 0;
+      Sink.Cursor := 1;
       Sink.Fail_Limit := Natural'Last;
    end Reset;
 
@@ -38,6 +39,32 @@ package body Tarlib.Test_Outputs is
       Result := Tarlib.Errors.OK;
    end Write;
 
+   overriding procedure Read
+     (Sink   : in out Memory_Sink;
+      Data   : out Ada.Streams.Stream_Element_Array;
+      Last   : out Ada.Streams.Stream_Element_Offset;
+      Result : out Tarlib.Errors.Status)
+   is
+      Position : Ada.Streams.Stream_Element_Offset := Data'First;
+   begin
+      Data := [others => 0];
+      Last := Data'First - 1;
+
+      while Position <= Data'Last and then Sink.Cursor <= Sink.Last loop
+         Data (Position) := Sink.Buffer (Sink.Cursor);
+         Last := Position;
+         Position := Position + 1;
+         Sink.Cursor := Sink.Cursor + 1;
+      end loop;
+
+      Result := Tarlib.Errors.OK;
+   end Read;
+
+   procedure Rewind (Sink : in out Memory_Sink) is
+   begin
+      Sink.Cursor := 1;
+   end Rewind;
+
    function Length (Sink : Memory_Sink) return Natural is
    begin
       return Sink.Last;
@@ -49,6 +76,14 @@ package body Tarlib.Test_Outputs is
    begin
       return Sink.Buffer (Index);
    end Element;
+
+   procedure Set_Element
+     (Sink  : in out Memory_Sink;
+      Index : Positive;
+      Value : Ada.Streams.Stream_Element) is
+   begin
+      Sink.Buffer (Index) := Value;
+   end Set_Element;
 
    function Bytes (Sink : Memory_Sink) return Ada.Streams.Stream_Element_Array is
       Result : Ada.Streams.Stream_Element_Array

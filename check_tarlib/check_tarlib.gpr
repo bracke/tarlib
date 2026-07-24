@@ -1,0 +1,22 @@
+with "config/check_tarlib_config.gpr";
+with "project_tools";
+
+project Check_Tarlib is
+
+   for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Check_Tarlib_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("check_tarlib.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        Check_Tarlib_Config.Ada_Compiler_Switches
+        & ("-gnat2022", "-gnatyM120", "-gnatX", "-gnata");
+   end Compiler;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es");
+   end Binder;
+
+end Check_Tarlib;

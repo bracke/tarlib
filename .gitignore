@@ -11,3 +11,9 @@
 /bin/tarlib_tests/config/
 /bin/tarlib_tests/obj/
 /bin/tarlib_tests/bin/
+
+# Check crate generated state and build outputs
+/check_tarlib/alire/
+/check_tarlib/config/
+/check_tarlib/obj/
+/check_tarlib/bin/

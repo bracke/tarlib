@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux-fast-feedback:
+    name: Linux fast feedback
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tarlib
+        uses: actions/checkout@v4
+        with:
+          path: tarlib
+      - name: Set up Ada workspace
+        uses: ./tarlib/.github/actions/setup-ada-workspace
+      - name: Build library
+        working-directory: tarlib
+        run: alr --non-interactive build
+      - name: Run manifest test action
+        working-directory: tarlib
+        run: alr --non-interactive test
+      - name: Build checker
+        working-directory: tarlib/check_tarlib
+        run: alr --non-interactive build
+      - name: Run tarlib checker
+        working-directory: tarlib/check_tarlib
+        run: ./bin/check_tarlib

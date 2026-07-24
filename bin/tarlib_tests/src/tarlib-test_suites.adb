@@ -1,7 +1,9 @@
 with Tarlib.Archive_Tests;
+with Tarlib.File_Tests;
 with Tarlib.Field_Tests;
 with Tarlib.Header_Tests;
 with Tarlib.Path_Tests;
+with Tarlib.Reader_Tests;
 with Tarlib.Writer_Tests;
 
 package body Tarlib.Test_Suites is
@@ -13,6 +15,8 @@ package body Tarlib.Test_Suites is
       Result.Add_Test (new Tarlib.Path_Tests.Test_Case);
       Result.Add_Test (new Tarlib.Header_Tests.Test_Case);
       Result.Add_Test (new Tarlib.Writer_Tests.Test_Case);
+      Result.Add_Test (new Tarlib.Reader_Tests.Test_Case);
+      Result.Add_Test (new Tarlib.File_Tests.Test_Case);
       Result.Add_Test (new Tarlib.Archive_Tests.Test_Case);
       return Result;
    end Suite;

@@ -11,14 +11,16 @@ is
       Invalid_Entry_Kind,
       Invalid_Metadata,
       Invalid_Size,
+      Invalid_Archive,
       Numeric_Field_Overflow,
       Too_Much_Entry_Data,
       Too_Little_Entry_Data,
+      Input_Failure,
       Output_Failure,
       Already_Finished,
       Internal_Error);
-   --  Deterministic result code. Output_Failure and Internal_Error are
-   --  terminal for a writer.
+   --  Deterministic result code. Input_Failure, Output_Failure, and
+   --  Internal_Error are terminal for stream processors.
 
    type Status is record
       Code : Status_Code := Success;
