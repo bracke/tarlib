@@ -130,6 +130,39 @@ selected GNU/PAX variants:
   malformed/truncated header, payload, PAX, and sparse-map cases without
   requiring external fuzzing tools
 
+## Quick Start
+
+Create a small archive:
+
+```sh
+alr build
+alr exec -- gprbuild -P examples/examples.gpr
+./examples/bin/write_archive
+```
+
+List an archive:
+
+```sh
+./examples/bin/read_archive example.tar
+```
+
+Pack and extract a directory tree:
+
+```sh
+./examples/bin/pack_extract
+```
+
+## Documentation
+
+- [API guide](docs/API_GUIDE.md): reader, writer, filesystem helper, and
+  lifecycle usage.
+- [Format support matrix](docs/FORMAT_SUPPORT.md): read/write support by tar
+  feature and dialect.
+- [Limitations](docs/LIMITATIONS.md): intentionally unsupported behavior and
+  platform-dependent features.
+- [Extraction and security policy](docs/SECURITY.md): path safety, extraction
+  options, and trusted-archive behavior.
+
 ## Tests
 
 Run the library and AUnit test suite with:

@@ -63,6 +63,14 @@ procedure Check_Tarlib is
       Require_File ("src/tarlib-readers.ads");
       Require_File ("src/tarlib-writers.ads");
       Require_File ("src/tarlib-files.ads");
+      Require_File ("docs/API_GUIDE.md");
+      Require_File ("docs/FORMAT_SUPPORT.md");
+      Require_File ("docs/LIMITATIONS.md");
+      Require_File ("docs/SECURITY.md");
+      Require_File ("examples/examples.gpr");
+      Require_File ("examples/write_archive.adb");
+      Require_File ("examples/read_archive.adb");
+      Require_File ("examples/pack_extract.adb");
       Require_File ("bin/tarlib_tests/alire.toml");
       Require_File ("bin/tarlib_tests/tarlib_tests.gpr");
       Require_File ("bin/tarlib_tests/src/tarlib_tests.adb");
@@ -71,6 +79,17 @@ procedure Check_Tarlib is
       Require_Text ("README.md", "alr test");
       Require_Text ("README.md", "sequential archive reading");
       Require_Text ("README.md", "sequential archive writing");
+      Require_Text ("README.md", "docs/API_GUIDE.md");
+      Require_Text ("README.md", "docs/FORMAT_SUPPORT.md");
+      Require_Text ("docs/API_GUIDE.md", "Tarlib.Writers");
+      Require_Text ("docs/API_GUIDE.md", "Tarlib.Readers");
+      Require_Text ("docs/API_GUIDE.md", "Tarlib.Files");
+      Require_Text ("docs/FORMAT_SUPPORT.md", "gzip/bzip2/xz/zstd compression");
+      Require_Text ("docs/LIMITATIONS.md", "Automatic multi-volume archive splitting");
+      Require_Text ("docs/SECURITY.md", "Archive paths must be relative");
+      Require_Text ("examples/examples.gpr", "write_archive.adb");
+      Require_Text ("examples/examples.gpr", "read_archive.adb");
+      Require_Text ("examples/examples.gpr", "pack_extract.adb");
       Require_Text ("bin/tarlib_tests/alire.toml", "project_tools");
       Require_Text ("bin/tarlib_tests/tarlib_tests.gpr", "with ""project_tools""");
    end Check_Required_Surface;
@@ -178,6 +197,14 @@ begin
      ("build tarlib",
       [1 => new String'("--non-interactive"),
        2 => new String'("build")]);
+   Run_Command
+     ("build tarlib examples",
+      [1 => new String'("--non-interactive"),
+       2 => new String'("exec"),
+       3 => new String'("--"),
+       4 => new String'("gprbuild"),
+       5 => new String'("-P"),
+       6 => new String'("examples/examples.gpr")]);
    Run_Command
      ("run tarlib AUnit suite",
       [1 => new String'("--non-interactive"),

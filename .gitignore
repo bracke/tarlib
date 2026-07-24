@@ -17,3 +17,11 @@
 /check_tarlib/config/
 /check_tarlib/obj/
 /check_tarlib/bin/
+
+# Example build outputs and generated sample data
+/examples/obj/
+/examples/bin/
+/example.tar
+/tree.tar
+/example-input/
+/example-output/
