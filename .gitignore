@@ -1,0 +1,13 @@
+# Alire-generated local state
+/alire/
+/config/
+
+# Build outputs
+/obj/
+/lib/
+
+# Test crate generated state and build outputs
+/bin/tarlib_tests/alire/
+/bin/tarlib_tests/config/
+/bin/tarlib_tests/obj/
+/bin/tarlib_tests/bin/

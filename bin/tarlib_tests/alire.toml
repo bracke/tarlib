@@ -1,0 +1,31 @@
+name = "tarlib_tests"
+description = "AUnit test suite for tarlib"
+version = "0.1.0"
+
+authors = ["Bent Bracke"]
+maintainers = ["Bent Bracke <bent@bracke.dk>"]
+maintainers-logins = ["bracke"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+executables = ["tarlib_tests"]
+project-files = ["tarlib_tests.gpr"]
+
+[[depends-on]]
+gnat_native = "=15.2.1"
+
+[[depends-on]]
+tarlib = "*"
+
+[[depends-on]]
+aunit = "^26.0.0"
+
+[[depends-on]]
+project_tools = "~0.1.0"
+
+[[pins]]
+tarlib = { path = "../.." }
+
+[[pins]]
+project_tools = { path = "../../../project_tools" }
+
+[build-profiles]
+"*" = "development"

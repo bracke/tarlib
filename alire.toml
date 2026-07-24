@@ -1,0 +1,21 @@
+name = "tarlib"
+description = "Deterministic write-only POSIX USTAR archive creation library"
+version = "0.1.0"
+
+authors = ["Bent Bracke"]
+maintainers = ["Bent Bracke <bent@bracke.dk>"]
+maintainers-logins = ["bracke"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = "https://github.com/bracke/tarlib"
+tags = ["ada", "tar", "ustar", "archive"]
+project-files = ["tarlib.gpr"]
+
+[[depends-on]]
+gnat_native = "=15.2.1"
+
+[build-profiles]
+"*" = "development"
+
+[[actions]]
+type = "test"
+command = ["sh", "-c", "cd bin/tarlib_tests && alr build --development && ./bin/tarlib_tests"]
