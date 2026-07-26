@@ -14,6 +14,11 @@ package body Tarlib.Writers is
    use type Tarlib.Entries.Entry_Kind;
    use type Tarlib.Errors.Status_Code;
 
+   Max_Header_Path : constant :=
+     Tarlib.Internal.Constants.Name_Size
+     + Tarlib.Internal.Constants.Prefix_Size
+     + 1;
+
    procedure Mark_Output_Failure
      (Archive : in out Writer;
       Result  : Tarlib.Errors.Status) is
@@ -578,7 +583,7 @@ package body Tarlib.Writers is
       Result   : out Tarlib.Errors.Status)
    is
       Header : Tarlib.Internal.Constants.Header_Block;
-      Header_Path : String (1 .. 100);
+      Header_Path : String (1 .. Max_Header_Path);
       Header_Path_Last : Natural;
       Header_Size : Tarlib.Byte_Count := Size;
       Header_Metadata : Tarlib.Entries.Metadata := Metadata;
@@ -672,7 +677,7 @@ package body Tarlib.Writers is
       Result       : out Tarlib.Errors.Status)
    is
       Header : Tarlib.Internal.Constants.Header_Block;
-      Header_Path : String (1 .. 100);
+      Header_Path : String (1 .. Max_Header_Path);
       Header_Path_Last : Natural;
       Header_Metadata : Tarlib.Entries.Metadata := Metadata;
       Physical_Size : Tarlib.Byte_Count;
@@ -911,7 +916,7 @@ package body Tarlib.Writers is
       Result    : out Tarlib.Errors.Status)
    is
       Header : Tarlib.Internal.Constants.Header_Block;
-      Header_Path : String (1 .. 100);
+      Header_Path : String (1 .. Max_Header_Path);
       Header_Path_Last : Natural;
       Header_Link_Path : constant String :=
         (if Link_Path'Length <= 100 then Link_Path else "pax-link-target");
@@ -1022,7 +1027,7 @@ package body Tarlib.Writers is
       Result   : out Tarlib.Errors.Status)
    is
       Header : Tarlib.Internal.Constants.Header_Block;
-      Header_Path : String (1 .. 100);
+      Header_Path : String (1 .. Max_Header_Path);
       Header_Path_Last : Natural;
       PAX : PAX_Buffer;
       Header_Metadata : Tarlib.Entries.Metadata := Metadata;

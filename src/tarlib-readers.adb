@@ -1860,10 +1860,17 @@ package body Tarlib.Readers is
          Archive.Active_Sparse_Extents (1 .. Archive.Active_Sparse_Count) :=
            Archive.Pending_Sparse_Extents (1 .. Archive.Active_Sparse_Count);
          Archive.Active_Physical_Size := Parsed.Size;
+         Info.Sparse_Count := Archive.Active_Sparse_Count;
+         Info.Sparse_Logical_Size_Value := Info.Entry_Size;
+         Info.Sparse_Physical_Size_Value := Parsed.Size;
+         Info.Sparse_Extent_Values (1 .. Archive.Active_Sparse_Count) :=
+           Archive.Active_Sparse_Extents (1 .. Archive.Active_Sparse_Count);
          Archive.Remaining_Padding :=
            Tarlib.Internal.Padding.Padding_Length (Parsed.Size);
       else
          Archive.Active_Physical_Size := Info.Entry_Size;
+         Info.Sparse_Logical_Size_Value := Info.Entry_Size;
+         Info.Sparse_Physical_Size_Value := Info.Entry_Size;
          Archive.Remaining_Padding :=
            Tarlib.Internal.Padding.Padding_Length (Info.Entry_Size);
       end if;
@@ -2178,6 +2185,43 @@ package body Tarlib.Readers is
    begin
       return Info.Volume_Offset;
    end Multi_Volume_Offset;
+
+   function Sparse_Extent_Count (Info : Entry_Info) return Natural is
+   begin
+      return Info.Sparse_Count;
+   end Sparse_Extent_Count;
+
+   function Sparse_Logical_Size (Info : Entry_Info) return Tarlib.Byte_Count is
+   begin
+      return Info.Sparse_Logical_Size_Value;
+   end Sparse_Logical_Size;
+
+   function Sparse_Physical_Size (Info : Entry_Info) return Tarlib.Byte_Count is
+   begin
+      return Info.Sparse_Physical_Size_Value;
+   end Sparse_Physical_Size;
+
+   function Sparse_Extent_Offset
+     (Info  : Entry_Info;
+      Index : Positive) return Tarlib.Byte_Count is
+   begin
+      if Index > Info.Sparse_Count then
+         return 0;
+      else
+         return Info.Sparse_Extent_Values (Index).Offset;
+      end if;
+   end Sparse_Extent_Offset;
+
+   function Sparse_Extent_Length
+     (Info  : Entry_Info;
+      Index : Positive) return Tarlib.Byte_Count is
+   begin
+      if Index > Info.Sparse_Count then
+         return 0;
+      else
+         return Info.Sparse_Extent_Values (Index).Length;
+      end if;
+   end Sparse_Extent_Length;
 
    function Metadata (Info : Entry_Info) return Tarlib.Entries.Metadata is
    begin

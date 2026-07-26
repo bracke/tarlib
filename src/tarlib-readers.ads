@@ -105,6 +105,25 @@ is
      (Info : Entry_Info) return Tarlib.Entries.Archive_Offset;
    --  Return GNU multi-volume continuation offset metadata, or zero.
 
+   function Sparse_Extent_Count (Info : Entry_Info) return Natural;
+   --  Return the number of sparse data extents retained for Info.
+
+   function Sparse_Logical_Size (Info : Entry_Info) return Tarlib.Byte_Count;
+   --  Return the logical sparse file size. For non-sparse entries this is Size.
+
+   function Sparse_Physical_Size (Info : Entry_Info) return Tarlib.Byte_Count;
+   --  Return the physical data bytes stored for a sparse entry.
+
+   function Sparse_Extent_Offset
+     (Info  : Entry_Info;
+      Index : Positive) return Tarlib.Byte_Count;
+   --  Return a sparse extent logical offset by 1-based index, or zero.
+
+   function Sparse_Extent_Length
+     (Info  : Entry_Info;
+      Index : Positive) return Tarlib.Byte_Count;
+   --  Return a sparse extent byte length by 1-based index, or zero.
+
    function Metadata (Info : Entry_Info) return Tarlib.Entries.Metadata;
    --  Return deterministic metadata parsed from Info.
 
@@ -199,6 +218,10 @@ private
       Link_Length : Natural range 0 .. Max_Path_Length := 0;
       Device_Info : Tarlib.Entries.Device_Numbers := Tarlib.Entries.No_Device;
       Volume_Offset : Tarlib.Entries.Archive_Offset := 0;
+      Sparse_Count : Natural range 0 .. Max_Sparse_Extents := 0;
+      Sparse_Logical_Size_Value : Tarlib.Byte_Count := 0;
+      Sparse_Physical_Size_Value : Tarlib.Byte_Count := 0;
+      Sparse_Extent_Values : Sparse_Extents;
       Entry_Kind  : Tarlib.Entries.Entry_Kind := Tarlib.Entries.Regular_File;
       Entry_Size  : Tarlib.Byte_Count := 0;
       Entry_Meta  : Tarlib.Entries.Metadata :=
