@@ -4,12 +4,12 @@ runs:
   using: composite
   steps:
     - name: Check out project_tools sibling
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: ${{ github.repository_owner }}/project_tools
         path: project_tools
     - name: Set up Alire
-      uses: alire-project/setup-alire@v5
+      uses: alire-project/setup-alire@v6
       with:
         toolchain: gnat_native=15.2.1 gprbuild
     - name: Report selected GNAT
