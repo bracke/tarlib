@@ -1,7 +1,9 @@
 with Ada.Directories;
 with Ada.Streams;
+with Ada.Strings.Unbounded;
 
 with Hostkit.Fs;
+with Hostkit.Process;
 with Interfaces.C;
 with Interfaces.C.Strings;
 with Interfaces;
@@ -251,44 +253,24 @@ package body Tarlib.Files is
       Options : Extraction_Options;
       Result  : out Tarlib.Errors.Status)
    is
-      function C_System
-        (Command : Interfaces.C.Strings.chars_ptr) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "system";
-
-      function Safe_Shell_Word (Text : String) return Boolean is
+      --  An argument vector, not a command line: setfacl and chattr are run
+      --  directly, so nothing here is parsed by a shell and no path or ACL text
+      --  has to be filtered for what a shell would do with it. The filter this
+      --  replaced rejected any path holding a space, which is a legal path.
+      procedure Run_Tool (Program : String; Arguments : Hostkit.String_Vectors.Vector) is
+         --  Resolved first: the spawn underneath does not search PATH, and a
+         --  name it cannot find fails exactly like a tool that ran and refused.
+         Located     : constant String := Hostkit.Process.Locate (Program);
+         Exit_Status : Integer;
+         Ran         : Boolean;
       begin
-         if Text'Length = 0 then
-            return False;
+         if Located = "" then
+            Result := (Code => Tarlib.Errors.Output_Failure);
+            return;
          end if;
 
-         for Ch of Text loop
-            if not (Ch in 'a' .. 'z'
-                    or else Ch in 'A' .. 'Z'
-                    or else Ch in '0' .. '9'
-                    or else Ch = '/'
-                    or else Ch = '.'
-                    or else Ch = '_'
-                    or else Ch = '-'
-                    or else Ch = ':'
-                    or else Ch = ','
-                    or else Ch = '='
-                    or else Ch = '+')
-            then
-               return False;
-            end if;
-         end loop;
-
-         return True;
-      end Safe_Shell_Word;
-
-      procedure Run_Command (Command : String) is
-         C_Command : Interfaces.C.Strings.chars_ptr;
-         Status    : Interfaces.C.int;
-      begin
-         C_Command := Interfaces.C.Strings.New_String (Command);
-         Status := C_System (C_Command);
-         Interfaces.C.Strings.Free (C_Command);
-         if Status = 0 then
+         Ran := Hostkit.Process.Run (Located, Arguments, Exit_Status);
+         if Ran and then Exit_Status = 0 then
             Result := Tarlib.Errors.OK;
          else
             Result := (Code => Tarlib.Errors.Output_Failure);
@@ -296,28 +278,38 @@ package body Tarlib.Files is
       exception
          when others =>
             Result := (Code => Tarlib.Errors.Output_Failure);
-      end Run_Command;
+      end Run_Tool;
+
+      function Words (First : String; Second : String) return Hostkit.String_Vectors.Vector is
+         Items : Hostkit.String_Vectors.Vector;
+      begin
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String (First));
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String (Second));
+         return Items;
+      end Words;
 
       procedure Apply_Native_ACL (Default_ACL : Boolean; Text : String) is
          Prefix : constant String := (if Default_ACL then "d:" else "");
+         Items  : Hostkit.String_Vectors.Vector;
       begin
-         if not Safe_Shell_Word (Path) or else not Safe_Shell_Word (Text) then
+         if Text'Length = 0 then
             Result := (Code => Tarlib.Errors.Invalid_Metadata);
             return;
          end if;
 
-         Run_Command ("setfacl -m " & Prefix & Text & " " & Path);
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String ("-m"));
+         Items.Append
+           (Ada.Strings.Unbounded.To_Unbounded_String (Prefix & Text));
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String (Path));
+         Run_Tool ("setfacl", Items);
       end Apply_Native_ACL;
 
       procedure Apply_Native_Flags (Text : String) is
       begin
-         if not Safe_Shell_Word (Path) then
-            Result := (Code => Tarlib.Errors.Invalid_Metadata);
-            return;
-         elsif Text = "nodump" then
-            Run_Command ("chattr +d " & Path);
+         if Text = "nodump" then
+            Run_Tool ("chattr", Words ("+d", Path));
          elsif Text = "dump" then
-            Run_Command ("chattr -d " & Path);
+            Run_Tool ("chattr", Words ("-d", Path));
          else
             Result := (Code => Tarlib.Errors.Invalid_Metadata);
          end if;
