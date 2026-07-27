@@ -18,8 +18,17 @@ tarlib = "*"
 [[depends-on]]
 aunit = "^26.0.0"
 
+# The ACL test asks whether this host has setfacl at all, and whether the
+# filesystem under the scratch directory will take an ACL, before asserting
+# that tarlib applied one.
+[[depends-on]]
+hostkit = "*"
+
 [[depends-on]]
 project_tools = "~0.1.0"
+
+[[pins]]
+hostkit = { path = "../../../hostkit" }
 
 [[pins]]
 tarlib = { path = "../.." }

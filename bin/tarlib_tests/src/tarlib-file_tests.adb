@@ -1,3 +1,7 @@
+with Ada.Strings.Unbounded;
+with Ada.Text_IO;
+with Hostkit.Process;
+with Hostkit;
 with Ada.Directories;
 with Ada.Streams;
 with Ada.Streams.Stream_IO;
@@ -288,6 +292,108 @@ package body Tarlib.File_Tests is
       Assert (Last = Read_Back'Last, "extracted length");
       Assert (Read_Back = Payload, "extracted payload");
    end Test_File_Archive_Roundtrip;
+
+   --  The ACL path had no coverage at all, which is how it went from a shell
+   --  command to an argument vector without anyone noticing that the spawn
+   --  underneath does not search PATH. It needs a host with setfacl and a
+   --  filesystem that takes an ACL, so it says what it skipped rather than
+   --  passing quietly.
+   procedure Test_Native_ACL_Applied
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      --  A space in the path: the filter this replaced rejected one, and
+      --  reported a legal path as invalid metadata.
+      Root       : constant String := "/tmp/tarlib acl test";
+      Output_Dir : constant String := Root & "/output";
+      Probe      : constant String := Root & "/probe.bin";
+      ACL_Text   : constant String := "u::rwx";
+
+      Setfacl    : constant String := Hostkit.Process.Locate ("setfacl");
+
+      function Filesystem_Takes_ACLs return Boolean is
+         Items  : Hostkit.String_Vectors.Vector;
+         Status : Integer;
+         Ran    : Boolean;
+         File   : Ada.Streams.Stream_IO.File_Type;
+      begin
+         Ada.Streams.Stream_IO.Create
+           (File, Ada.Streams.Stream_IO.Out_File, Probe);
+         Ada.Streams.Stream_IO.Close (File);
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String ("-m"));
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String (ACL_Text));
+         Items.Append (Ada.Strings.Unbounded.To_Unbounded_String (Probe));
+         Ran := Hostkit.Process.Run (Setfacl, Items, Status);
+         return Ran and then Status = 0;
+      exception
+         when others =>
+            return False;
+      end Filesystem_Takes_ACLs;
+
+      Payload  : constant Ada.Streams.Stream_Element_Array :=
+        [Character'Pos ('a'), Character'Pos ('c'), Character'Pos ('l')];
+      Result   : Tarlib.Errors.Status;
+      Sink     : aliased Tarlib.Test_Outputs.Memory_Sink;
+      Writer   : Tarlib.Writers.Writer;
+      Reader   : Tarlib.Readers.Reader;
+      Metadata : Tarlib.Entries.Metadata :=
+        Tarlib.Entries.Default_Metadata (Tarlib.Entries.Regular_File);
+      Options  : constant Tarlib.Files.Extraction_Options :=
+        (Unsupported_Entries => Tarlib.Files.Skip_Unsupported,
+         Apply_Permissions   => True,
+         Apply_Timestamps    => False,
+         Apply_Ownership     => False,
+         Create_Special_Entries => False,
+         Extract_GNU_Metadata => True,
+         Device_Layout => Tarlib.Files.Native_Device_Layout,
+         Apply_Extended_Attributes => False,
+         Apply_ACLs => False,
+         Apply_File_Flags => False,
+         Apply_Native_ACLs => True,
+         Apply_Native_File_Flags => False);
+   begin
+      Reset_Tree (Root, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "reset root");
+
+      if Setfacl = "" then
+         Ada.Text_IO.Put_Line ("   (skipped: no setfacl on this host)");
+         return;
+      elsif not Filesystem_Takes_ACLs then
+         Ada.Text_IO.Put_Line
+           ("   (skipped: this filesystem will not take an ACL)");
+         return;
+      end if;
+
+      Metadata.Mode := 8#0600#;
+      Tarlib.Writers.Initialize (Writer, Sink, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "writer initialize");
+      Tarlib.Writers.Add_Extended_Record
+        (Writer, "SCHILY.acl.access", ACL_Text, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "add ACL record");
+      Tarlib.Writers.Begin_Entry
+        (Writer, "file.bin", Tarlib.Entries.Regular_File,
+         Tarlib.Byte_Count (Payload'Length), Metadata, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "begin file");
+      Tarlib.Writers.Write (Writer, Payload, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "write payload");
+      Tarlib.Writers.End_Entry (Writer, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "end file");
+      Tarlib.Writers.Finish (Writer, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "finish archive");
+
+      Tarlib.Test_Outputs.Rewind (Sink);
+      Tarlib.Readers.Initialize (Reader, Sink, Result);
+      Assert (Result.Code = Tarlib.Errors.Success, "reader initialize");
+
+      --  Success here means setfacl was found and returned 0. Before the tool
+      --  was resolved through PATH this failed, and failed as a status the
+      --  caller could not tell from setfacl refusing the ACL.
+      Tarlib.Files.Extract_All (Reader, Output_Dir, Options, Result);
+      Assert
+        (Result.Code = Tarlib.Errors.Success,
+         "extraction applies a native ACL under a path holding a space");
+   end Test_Native_ACL_Applied;
 
    procedure Test_Extraction_Options
      (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -878,6 +984,8 @@ package body Tarlib.File_Tests is
         (T, Test_File_Archive_Roundtrip'Access, "file archive roundtrip");
       Registration.Register_Routine
         (T, Test_Extraction_Options'Access, "extraction options");
+      AUnit.Test_Cases.Registration.Register_Routine
+        (T, Test_Native_ACL_Applied'Access, "native ACL applied on extraction");
       Registration.Register_Routine
         (T, Test_POSIX_Link_Extraction'Access, "POSIX link extraction");
       Registration.Register_Routine
