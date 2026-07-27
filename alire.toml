@@ -10,6 +10,15 @@ website = "https://github.com/bracke/tarlib"
 tags = ["ada", "tar", "ustar", "archive"]
 project-files = ["tarlib.gpr"]
 
+# The extraction side needs ownership, links, fifos and device nodes: things
+# that differ because the host differs, and that a POSIX binding here made
+# unlinkable on Windows.
+[[depends-on]]
+hostkit = "*"
+
+[[pins]]
+hostkit = { path = "../hostkit" }
+
 [[depends-on]]
 gnat_native = "=15.2.1"
 

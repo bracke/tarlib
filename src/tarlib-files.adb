@@ -1,4 +1,7 @@
 with Ada.Directories;
+with Ada.Streams;
+
+with Hostkit.Fs;
 with Interfaces.C;
 with Interfaces.C.Strings;
 with Interfaces;
@@ -197,14 +200,6 @@ package body Tarlib.Files is
       Options  : Extraction_Options;
       Result   : out Tarlib.Errors.Status)
    is
-      function C_Chown
-        (Path : Interfaces.C.Strings.chars_ptr;
-         UID  : Interfaces.C.unsigned;
-         GID  : Interfaces.C.unsigned) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "chown";
-
-      C_Path : Interfaces.C.Strings.chars_ptr;
-      Status : Interfaces.C.int;
    begin
       if not Options.Apply_Ownership then
          Result := Tarlib.Errors.OK;
@@ -216,14 +211,12 @@ package body Tarlib.Files is
          return;
       end if;
 
-      C_Path := Interfaces.C.Strings.New_String (Path);
-      Status :=
-        C_Chown
-          (C_Path, Interfaces.C.unsigned (Metadata.UID),
-           Interfaces.C.unsigned (Metadata.GID));
-      Interfaces.C.Strings.Free (C_Path);
-
-      if Status = 0 then
+      --  Ownership is a host fact, and one this host may not have: Hostkit
+      --  answers for it rather than this binding chown itself, which is what
+      --  kept the library from linking anywhere without one.
+      if Hostkit.Fs.Set_Owner
+        (Path, Integer (Metadata.UID), Integer (Metadata.GID))
+      then
          Result := Tarlib.Errors.OK;
       else
          Result := (Code => Tarlib.Errors.Output_Failure);
@@ -258,13 +251,6 @@ package body Tarlib.Files is
       Options : Extraction_Options;
       Result  : out Tarlib.Errors.Status)
    is
-      function C_Setxattr
-        (Path  : Interfaces.C.Strings.chars_ptr;
-         Name  : Interfaces.C.Strings.chars_ptr;
-         Value : Interfaces.C.Strings.chars_ptr;
-         Size  : Interfaces.C.size_t;
-         Flags : Interfaces.C.int) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "setxattr";
       function C_System
         (Command : Interfaces.C.Strings.chars_ptr) return Interfaces.C.int
         with Import, Convention => C, External_Name => "system";
@@ -353,30 +339,27 @@ package body Tarlib.Files is
          Close (Sink, Result);
       end Write_Sidecar;
 
-      C_Path  : Interfaces.C.Strings.chars_ptr;
-      C_Name  : Interfaces.C.Strings.chars_ptr;
-      C_Value : Interfaces.C.Strings.chars_ptr;
-      Status  : Interfaces.C.int;
+      Applied : Boolean;
    begin
       if Options.Apply_Extended_Attributes then
          for Index in 1 .. Tarlib.Readers.XAttr_Count (Info) loop
-            C_Path := Interfaces.C.Strings.New_String (Path);
-            C_Name :=
-              Interfaces.C.Strings.New_String
-                (Tarlib.Readers.XAttr_Name (Info, Index));
-            C_Value :=
-              Interfaces.C.Strings.New_String
-                (Tarlib.Readers.XAttr_Value (Info, Index));
-            Status :=
-              C_Setxattr
-                (C_Path, C_Name, C_Value,
-                 Interfaces.C.size_t
-                   (Tarlib.Readers.XAttr_Value (Info, Index)'Length),
-                 0);
-            Interfaces.C.Strings.Free (C_Path);
-            Interfaces.C.Strings.Free (C_Name);
-            Interfaces.C.Strings.Free (C_Value);
-            if Status /= 0 then
+            declare
+               Text  : constant String :=
+                 Tarlib.Readers.XAttr_Value (Info, Index);
+               Bytes : Ada.Streams.Stream_Element_Array
+                 (1 .. Ada.Streams.Stream_Element_Offset (Text'Length));
+               Pos   : Ada.Streams.Stream_Element_Offset := Bytes'First;
+            begin
+               for C of Text loop
+                  Bytes (Pos) :=
+                    Ada.Streams.Stream_Element (Character'Pos (C));
+                  Pos := Pos + 1;
+               end loop;
+               Applied :=
+                 Hostkit.Fs.Set_Extended_Attribute
+                   (Path, Tarlib.Readers.XAttr_Name (Info, Index), Bytes);
+            end;
+            if not Applied then
                Result := (Code => Tarlib.Errors.Output_Failure);
                return;
             end if;
@@ -446,10 +429,6 @@ package body Tarlib.Files is
       Options  : Extraction_Options;
       Result   : out Tarlib.Errors.Status)
    is
-      function C_Mkfifo
-        (Path : Interfaces.C.Strings.chars_ptr;
-         Mode : Interfaces.C.unsigned) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "mkfifo";
 
       C_Path : Interfaces.C.Strings.chars_ptr;
       Status : Interfaces.C.int;
@@ -464,15 +443,9 @@ package body Tarlib.Files is
          return;
       end if;
 
-      C_Path := Interfaces.C.Strings.New_String (Path);
-      Status :=
-        C_Mkfifo
-          (C_Path,
-           Interfaces.C.unsigned
-             (Interfaces.Unsigned_32 (Metadata.Mode)));
-      Interfaces.C.Strings.Free (C_Path);
-
-      if Status = 0 then
+      if Hostkit.Fs.Create_FIFO
+        (Path, Natural (Interfaces.Unsigned_32 (Metadata.Mode)))
+      then
          Apply_Metadata (Path, Metadata, Options, Result);
       else
          Result := (Code => Tarlib.Errors.Output_Failure);
@@ -490,11 +463,6 @@ package body Tarlib.Files is
       Options  : Extraction_Options;
       Result   : out Tarlib.Errors.Status)
    is
-      function C_Mknod
-        (Path : Interfaces.C.Strings.chars_ptr;
-         Mode : Interfaces.C.unsigned;
-         Dev  : Interfaces.C.unsigned_long) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "mknod";
 
       S_IFCHR : constant Interfaces.C.unsigned := 8#020000#;
       S_IFBLK : constant Interfaces.C.unsigned := 8#060000#;
@@ -533,14 +501,16 @@ package body Tarlib.Files is
          return;
       end if;
 
-      Mode :=
-        (if Kind = Tarlib.Entries.Character_Device then S_IFCHR else S_IFBLK)
-        or Interfaces.C.unsigned (Interfaces.Unsigned_32 (Metadata.Mode));
-      C_Path := Interfaces.C.Strings.New_String (Path);
-      Status := C_Mknod (C_Path, Mode, Dev);
-      Interfaces.C.Strings.Free (C_Path);
-
-      if Status = 0 then
+      --  The major/minor layout stays here: which one wrote the archive is a
+      --  fact about the archive, not about this host. Hostkit takes the
+      --  encoded value and makes the node, or says it cannot.
+      if Hostkit.Fs.Create_Device
+        (Path,
+         (if Kind = Tarlib.Entries.Character_Device
+          then Hostkit.Fs.Character_Device else Hostkit.Fs.Block_Device),
+         Interfaces.Unsigned_64 (Dev),
+         Natural (Interfaces.Unsigned_32 (Metadata.Mode)))
+      then
          Apply_Metadata (Path, Metadata, Options, Result);
       else
          Result := (Code => Tarlib.Errors.Output_Failure);
@@ -555,27 +525,14 @@ package body Tarlib.Files is
       Link_Path   : String;
       Result      : out Tarlib.Errors.Status)
    is
-      function C_Symlink
-        (Target : Interfaces.C.Strings.chars_ptr;
-         Link   : Interfaces.C.Strings.chars_ptr) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "symlink";
 
-      C_Target : Interfaces.C.Strings.chars_ptr;
-      C_Link   : Interfaces.C.Strings.chars_ptr;
-      Status   : Interfaces.C.int;
    begin
       Ensure_Parent (Link_Path, Result);
       if Result.Code /= Tarlib.Errors.Success then
          return;
       end if;
 
-      C_Target := Interfaces.C.Strings.New_String (Target_Path);
-      C_Link := Interfaces.C.Strings.New_String (Link_Path);
-      Status := C_Symlink (C_Target, C_Link);
-      Interfaces.C.Strings.Free (C_Target);
-      Interfaces.C.Strings.Free (C_Link);
-
-      if Status = 0 then
+      if Hostkit.Fs.Create_Link (Target_Path, Link_Path) then
          Result := Tarlib.Errors.OK;
       else
          Result := (Code => Tarlib.Errors.Output_Failure);
@@ -590,27 +547,14 @@ package body Tarlib.Files is
       New_Path      : String;
       Result        : out Tarlib.Errors.Status)
    is
-      function C_Link
-        (Old_Path : Interfaces.C.Strings.chars_ptr;
-         New_Path : Interfaces.C.Strings.chars_ptr) return Interfaces.C.int
-        with Import, Convention => C, External_Name => "link";
 
-      C_Old  : Interfaces.C.Strings.chars_ptr;
-      C_New  : Interfaces.C.Strings.chars_ptr;
-      Status : Interfaces.C.int;
    begin
       Ensure_Parent (New_Path, Result);
       if Result.Code /= Tarlib.Errors.Success then
          return;
       end if;
 
-      C_Old := Interfaces.C.Strings.New_String (Existing_Path);
-      C_New := Interfaces.C.Strings.New_String (New_Path);
-      Status := C_Link (C_Old, C_New);
-      Interfaces.C.Strings.Free (C_Old);
-      Interfaces.C.Strings.Free (C_New);
-
-      if Status = 0 then
+      if Hostkit.Fs.Create_Hard_Link (Existing_Path, New_Path) then
          Result := Tarlib.Errors.OK;
       else
          Result := (Code => Tarlib.Errors.Output_Failure);

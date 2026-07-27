@@ -1,3 +1,4 @@
+with "config/tarlib_config.gpr";
 project Tarlib is
    for Library_Name use "tarlib";
    for Library_Version use Project'Library_Name & ".so.0.1.0";
