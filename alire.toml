@@ -1,5 +1,5 @@
 name = "tarlib"
-description = "Deterministic POSIX tar archive read/write library"
+description = "Deterministic POSIX tar: USTAR, GNU and PAX, read and write"
 version = "0.1.0"
 
 authors = ["Bent Bracke"]
@@ -7,7 +7,8 @@ maintainers = ["Bent Bracke <bent@bracke.dk>"]
 maintainers-logins = ["bracke"]
 licenses = "MIT"
 website = "https://github.com/bracke/tarlib"
-tags = ["ada", "tar", "ustar", "archive"]
+long-description = "tarlib reads and writes POSIX tar archives sequentially, through caller-owned stream abstractions rather than a filesystem it assumes. It covers USTAR regular files, directories, hard and symbolic links, character and block devices and FIFOs, and selected GNU and PAX variants including multi-volume reassembly, incremental dump listings and volume labels. Extraction is opt-in per entry kind, and mode bits, timestamps and ownership are applied only when asked for; the pieces that differ because the host differs are delegated to hostkit rather than bound to POSIX here, which is what keeps it building on Windows. Archive metadata defaults are fixed rather than taken from the clock or the environment, so the same inputs produce the same bytes."
+tags = ["tar", "ustar", "pax", "archive", "posix"]
 project-files = ["tarlib.gpr"]
 
 # The extraction side needs ownership, links, fifos and device nodes: things
