@@ -67,6 +67,13 @@ is
       Result       : out Tarlib.Errors.Status);
    --  Begin a sparse regular file. Callers then write exactly the
    --  concatenated bytes for Extents, not the logical holes.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Logical_Size Size the file would occupy written out in full.
+   --  @param Extents The ranges that actually hold bytes, in order.
+   --  @param Format Which sparse encoding to emit.
+   --  @param Metadata Deterministic metadata to encode.
+   --  @param Result Success or validation/output failure.
 
    procedure Begin_Sparse_File
      (Archive      : in out Writer;
@@ -76,6 +83,12 @@ is
       Metadata     : Tarlib.Entries.Metadata;
       Result       : out Tarlib.Errors.Status);
    --  Begin a GNU PAX sparse regular file with caller-supplied metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Logical_Size Size the file would occupy written out in full.
+   --  @param Extents The ranges that actually hold bytes, in order.
+   --  @param Metadata Deterministic metadata to encode.
+   --  @param Result Success or validation/output failure.
 
    procedure Begin_Sparse_File
      (Archive      : in out Writer;
@@ -84,6 +97,11 @@ is
       Extents      : Tarlib.Entries.Sparse_Extent_Array;
       Result       : out Tarlib.Errors.Status);
    --  Begin a sparse file with deterministic default metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Logical_Size Size the file would occupy written out in full.
+   --  @param Extents The ranges that actually hold bytes, in order.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_Directory
      (Archive : in out Writer;
@@ -117,6 +135,10 @@ is
       Link_Path : String;
       Result    : out Tarlib.Errors.Status);
    --  Add a hard link entry with deterministic default metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Link_Path Target, which must be archive-relative for a hard link.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_Symbolic_Link
      (Archive   : in out Writer;
@@ -124,6 +146,11 @@ is
       Link_Path : String;
       Result    : out Tarlib.Errors.Status);
    --  Add a symbolic link entry with deterministic default metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Link_Path Target, preserved as supplied; a symbolic link may
+   --         point anywhere, and the archive records what it said.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_Special
      (Archive  : in out Writer;
@@ -133,6 +160,12 @@ is
       Metadata : Tarlib.Entries.Metadata;
       Result   : out Tarlib.Errors.Status);
    --  Add a character device, block device, or FIFO entry.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Kind Character_Device, Block_Device or FIFO.
+   --  @param Device Major and minor numbers; ignored for a FIFO.
+   --  @param Metadata Deterministic metadata to encode.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_Character_Device
      (Archive : in out Writer;
@@ -140,6 +173,10 @@ is
       Device  : Tarlib.Entries.Device_Numbers;
       Result  : out Tarlib.Errors.Status);
    --  Add a character device entry with deterministic default metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Device Major and minor numbers.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_Block_Device
      (Archive : in out Writer;
@@ -147,12 +184,19 @@ is
       Device  : Tarlib.Entries.Device_Numbers;
       Result  : out Tarlib.Errors.Status);
    --  Add a block device entry with deterministic default metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Device Major and minor numbers.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_FIFO
      (Archive : in out Writer;
       Path    : String;
       Result  : out Tarlib.Errors.Status);
    --  Add a FIFO entry with deterministic default metadata.
+   --  @param Archive Ready writer.
+   --  @param Path Archive-relative USTAR path.
+   --  @param Result Success or validation/output failure.
 
    procedure Add_Extended_Record
      (Archive : in out Writer;
@@ -189,6 +233,9 @@ is
    --  @param Result Success, Already_Finished, invalid state, or output failure.
 
    function State (Archive : Writer) return Writer_State;
+   --  @param Archive Writer to ask about.
+   --  @return Its state. Failed is terminal: an output failure ends the
+   --          archive rather than being retried.
    --  Return the current writer state.
    --  @param Archive Writer to inspect.
    --  @return Current state.

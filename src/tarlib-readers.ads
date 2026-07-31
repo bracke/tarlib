@@ -79,102 +79,169 @@ is
       Listing : out Incremental_Listing;
       Result  : out Tarlib.Errors.Status);
    --  Read and parse the active GNU incremental dump entry payload.
+   --  @param Archive Reader in Reading_Entry on an incremental dump entry.
+   --  @param Listing The dump's records, read by index.
+   --  @param Result Success or validation/input failure.
 
    function State (Archive : Reader) return Reader_State;
    --  Return the current reader state.
+   --  @param Archive Reader to ask about.
+   --  @return Its state. Failed is terminal: a malformed archive ends the
+   --          read rather than being retried.
 
    function At_End (Archive : Reader) return Boolean;
    --  Return True after the archive terminator has been reached cleanly.
+   --  @param Archive Reader to ask about.
+   --  @return True once the two zero blocks have been seen, which is how a
+   --          read loop ends without guessing.
 
    function Path (Info : Entry_Info) return String;
    --  Return the archive-relative path for Info.
+   --  @param Info Entry the reader is positioned on.
+   --  @return Its path, as the archive records it.
 
    function Kind (Info : Entry_Info) return Tarlib.Entries.Entry_Kind;
    --  Return the entry kind for Info.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The entry kind.
 
    function Size (Info : Entry_Info) return Tarlib.Byte_Count;
    --  Return the declared content size for Info.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The stored size in bytes.
 
    function Link_Path (Info : Entry_Info) return String;
    --  Return the link target for hard link and symbolic link entries.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The link target, or "" for an entry that is not a link.
 
    function Device (Info : Entry_Info) return Tarlib.Entries.Device_Numbers;
    --  Return device major/minor numbers for character and block devices.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The major and minor numbers, meaningful for device entries.
 
    function Multi_Volume_Offset
      (Info : Entry_Info) return Tarlib.Entries.Archive_Offset;
    --  Return GNU multi-volume continuation offset metadata, or zero.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The logical offset this volume resumes at, which is what
+   --          Reassemble_Multi_Volume_File matches volumes on.
 
    function Sparse_Extent_Count (Info : Entry_Info) return Natural;
    --  Return the number of sparse data extents retained for Info.
+   --  @param Info Entry the reader is positioned on.
+   --  @return How many extents the entry declares; zero when it is not sparse.
 
    function Sparse_Logical_Size (Info : Entry_Info) return Tarlib.Byte_Count;
    --  Return the logical sparse file size. For non-sparse entries this is Size.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The size the file would occupy written out in full.
 
    function Sparse_Physical_Size (Info : Entry_Info) return Tarlib.Byte_Count;
    --  Return the physical data bytes stored for a sparse entry.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The bytes actually stored, holes excluded.
 
    function Sparse_Extent_Offset
      (Info  : Entry_Info;
       Index : Positive) return Tarlib.Byte_Count;
    --  Return a sparse extent logical offset by 1-based index, or zero.
+   --  @param Info Entry the reader is positioned on.
+   --  @param Index Extent number, from one.
+   --  @return Its logical offset, or zero outside the range.
 
    function Sparse_Extent_Length
      (Info  : Entry_Info;
       Index : Positive) return Tarlib.Byte_Count;
    --  Return a sparse extent byte length by 1-based index, or zero.
+   --  @param Info Entry the reader is positioned on.
+   --  @param Index Extent number, from one.
+   --  @return Its byte length, or zero outside the range.
 
    function Metadata (Info : Entry_Info) return Tarlib.Entries.Metadata;
    --  Return deterministic metadata parsed from Info.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The entry's metadata, as the header and any PAX records gave it.
 
    function Extended_Record_Count (Info : Entry_Info) return Natural;
    --  Return the number of retained unknown local PAX records.
+   --  @param Info Entry the reader is positioned on.
+   --  @return How many unknown local PAX records were retained.
 
    function Extended_Key
      (Info  : Entry_Info;
       Index : Positive) return String;
    --  Return an unknown local PAX key by 1-based index, or "" out of range.
+   --  @param Info Entry the reader is positioned on.
+   --  @param Index Record number, from one.
+   --  @return The record's key, or "" outside the range.
 
    function Extended_Value
      (Info  : Entry_Info;
       Index : Positive) return String;
    --  Return an unknown local PAX value by 1-based index, or "" out of range.
+   --  @param Info Entry the reader is positioned on.
+   --  @param Index Record number, from one.
+   --  @return The record's value, or "" outside the range.
 
    function XAttr_Count (Info : Entry_Info) return Natural;
    --  Return the number of retained `SCHILY.xattr.*` PAX records.
+   --  @param Info Entry the reader is positioned on.
+   --  @return How many extended attributes the entry carries.
 
    function XAttr_Name
      (Info  : Entry_Info;
       Index : Positive) return String;
    --  Return an xattr name without the `SCHILY.xattr.` prefix.
+   --  @param Info Entry the reader is positioned on.
+   --  @param Index Attribute number, from one.
+   --  @return Its name, without the SCHILY.xattr. prefix.
 
    function XAttr_Value
      (Info  : Entry_Info;
       Index : Positive) return String;
    --  Return an xattr value by 1-based index, or "" out of range.
+   --  @param Info Entry the reader is positioned on.
+   --  @param Index Attribute number, from one.
+   --  @return Its value, or "" outside the range.
 
    function ACL_Access (Info : Entry_Info) return String;
    --  Return retained `SCHILY.acl.access`, or "" when absent.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The access ACL text as stored, or "" when there is none.
 
    function ACL_Default (Info : Entry_Info) return String;
    --  Return retained `SCHILY.acl.default`, or "" when absent.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The default ACL text as stored, or "" when there is none.
 
    function File_Flags (Info : Entry_Info) return String;
    --  Return retained `LIBARCHIVE.fflags`, or "" when absent.
+   --  @param Info Entry the reader is positioned on.
+   --  @return The BSD file flags as stored, or "" when there are none.
 
    function Incremental_Record_Count
      (Listing : Incremental_Listing) return Natural;
    --  Return parsed GNU incremental dump record count.
+   --  @param Listing Listing read by Read_Incremental_Dump.
+   --  @return How many records it holds.
 
    function Incremental_Record_Path
      (Listing : Incremental_Listing;
       Index   : Positive) return String;
    --  Return an incremental record path by 1-based index, or "" out of range.
+   --  @param Listing Listing read by Read_Incremental_Dump.
+   --  @param Index Record number, from one.
+   --  @return That record's path, or "" outside the range.
 
    function Incremental_Record_Is_Directory
      (Listing : Incremental_Listing;
       Index   : Positive) return Boolean;
    --  Return True for `Y` records and False for `N` records or out of range.
+   --  @param Listing Listing read by Read_Incremental_Dump.
+   --  @param Index Record number, from one.
+   --  @return True when the record marks a directory. False covers both an
+   --          `N` record and an index outside the range.
 
 private
    type Input_Source_Access is access all Tarlib.Inputs.Input_Source'Class;

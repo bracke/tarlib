@@ -111,11 +111,17 @@ is
 
    function Text (Value : Metadata_Text) return String;
    --  Return the stored textual metadata value.
+   --  @param Value Bounded metadata field to read.
+   --  @return Its text, without the padding the bound implies.
 
    procedure Set_Text
      (Value  : in out Metadata_Text;
       Text   : String;
       Result : out Tarlib.Errors.Status);
    --  Set a bounded textual metadata value, rejecting overlong or NUL text.
+   --  @param Value Field to write.
+   --  @param Text Replacement text.
+   --  @param Result Ok, or why the text was refused: too long for the field, or
+   --         carrying a NUL, which a tar header cannot represent.
 
 end Tarlib.Entries;
