@@ -1,8 +1,4 @@
-with Ada.Streams;
-with Interfaces;
-
 package body Tarlib.Internal.Checksums is
-   use type Ada.Streams.Stream_Element_Offset;
    use type Interfaces.Integer_64;
    use type Interfaces.Unsigned_64;
 

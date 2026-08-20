@@ -1,5 +1,4 @@
 with Ada.Directories;
-with Ada.Streams;
 with Ada.Strings.Unbounded;
 
 with Hostkit.Fs;
@@ -12,7 +11,6 @@ with Tarlib.Entries;
 package body Tarlib.Files is
    use type Ada.Streams.Stream_Element_Offset;
    use type Interfaces.C.int;
-   use type Interfaces.C.unsigned;
    use type Interfaces.Unsigned_64;
    use type Tarlib.Entries.Entry_Kind;
    use type Tarlib.Errors.Status_Code;
@@ -421,9 +419,6 @@ package body Tarlib.Files is
       Options  : Extraction_Options;
       Result   : out Tarlib.Errors.Status)
    is
-
-      C_Path : Interfaces.C.Strings.chars_ptr;
-      Status : Interfaces.C.int;
    begin
       if not Options.Create_Special_Entries then
          Result := (Code => Tarlib.Errors.Invalid_Entry_Kind);
@@ -456,10 +451,6 @@ package body Tarlib.Files is
       Result   : out Tarlib.Errors.Status)
    is
 
-      S_IFCHR : constant Interfaces.C.unsigned := 8#020000#;
-      S_IFBLK : constant Interfaces.C.unsigned := 8#060000#;
-      C_Path  : Interfaces.C.Strings.chars_ptr;
-      Mode    : Interfaces.C.unsigned;
       Major   : constant Interfaces.Unsigned_32 :=
         Interfaces.Unsigned_32 (Device.Major);
       Minor   : constant Interfaces.Unsigned_32 :=
@@ -481,7 +472,6 @@ package body Tarlib.Files is
               Major_64 * 2**18 + Minor_64);
       Dev     : constant Interfaces.C.unsigned_long :=
         Interfaces.C.unsigned_long (Dev_64);
-      Status  : Interfaces.C.int;
    begin
       if not Options.Create_Special_Entries then
          Result := (Code => Tarlib.Errors.Invalid_Entry_Kind);

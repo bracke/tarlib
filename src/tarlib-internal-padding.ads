@@ -1,5 +1,3 @@
-with Tarlib;
-
 package Tarlib.Internal.Padding
   with Pure
 is
